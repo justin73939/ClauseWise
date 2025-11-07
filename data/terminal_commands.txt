@@ -1,4 +1,0 @@
-To pull data from github into collab
-!wget https://github.com/TheAtticusProject/cuad/raw/main/data.zip -O data.zip
-!unzip -q data.zip -d data
-!ls data
