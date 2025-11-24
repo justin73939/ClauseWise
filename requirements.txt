@@ -8,3 +8,7 @@ numpy
 matplotlib
 tqdm
 jupyter
+evaluate
+accelerate
+sentencepiece
+peft
