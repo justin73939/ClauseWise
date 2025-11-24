@@ -12,3 +12,4 @@ evaluate
 accelerate
 sentencepiece
 peft
+rouge_score
