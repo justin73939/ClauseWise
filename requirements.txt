@@ -13,3 +13,4 @@ accelerate
 sentencepiece
 peft
 rouge_score
+PyPDF2
