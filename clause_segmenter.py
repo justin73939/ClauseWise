@@ -6,9 +6,6 @@ Rule-based contract clause segmenter for ClauseWise.
 Pipeline:
     raw text -> preprocess -> section segmentation -> subclause segmentation
            -> clean-up -> list of clause dicts
-
-No external dependencies required (only stdlib).
-You can optionally add spaCy/NLTK sentence splitting later if you want.
 """
 
 from __future__ import annotations
@@ -18,11 +15,6 @@ from PyPDF2 import PdfReader
 import re
 from dataclasses import dataclass, asdict
 from typing import List, Optional, Dict, Any
-
-
-# ---------------------------
-# Data structures
-# ---------------------------
 
 @dataclass
 class Section:
@@ -39,11 +31,6 @@ class Clause:
     local_index: int             # index within section (1-based)
     label: Optional[str]         # e.g. "(a)" or "a)" or None
     text: str
-
-
-# ---------------------------
-# Configurable regex patterns
-# ---------------------------
 
 # "SECTION 1. TERM", "Article II – Payment"
 SECTION_HEADING_PATTERN = re.compile(
@@ -76,11 +63,6 @@ SUBCLAUSE_PAREN_PATTERN = re.compile(r'^\s*\(([a-zA-Z0-9ivxlcdm]+)\)\s+')
 #   "a) Text", "1) Text"
 SUBCLAUSE_SUFFIX_PATTERN = re.compile(r'^\s*([a-zA-Z0-9ivxlcdm]+)\)\s+')
 
-
-# ---------------------------
-# Main segmenter
-# ---------------------------
-
 class ContractSegmenter:
     def __init__(
         self,
@@ -94,8 +76,6 @@ class ContractSegmenter:
         """
         self.min_clause_len_chars = min_clause_len_chars
         self.merge_short_clauses = merge_short_clauses
-
-    # ----- Public API -----
 
     def segment_contract(self, text: str) -> List[Dict[str, Any]]:
         """
@@ -111,8 +91,6 @@ class ContractSegmenter:
         # Return list of plain dicts (easier to serialize / JSON)
         return [asdict(c) for c in clauses]
 
-    # ----- Pipeline steps -----
-
     def _preprocess(self, text: str) -> str:
         """
         Basic text normalization:
@@ -127,8 +105,6 @@ class ContractSegmenter:
 
         # Normalize line endings
         text = text.replace("\r\n", "\n").replace("\r", "\n")
-
-        # Collapse repeated spaces and tabs
         text = re.sub(r"[ \t]+", " ", text)
 
         # Strip trailing spaces on each line
@@ -187,8 +163,6 @@ class ContractSegmenter:
                 current_heading = line.strip()
                 current_lines = []
             else:
-                # Accumulate lines for current section
-                # Skip leading empty lines unless we already have content
                 if line.strip() or current_lines:
                     current_lines.append(line)
 
@@ -298,13 +272,6 @@ class ContractSegmenter:
             # Flush last clause in this section
             flush_current()
 
-            # If no explicit subclause markers were seen,
-            # we ended up treating the whole section as 1 clause already
-            # (since local_index starts at 0 and only increments when we flush).
-
-            # However, there is an edge case: if the section had no non-empty lines,
-            # local_index will be 0 and we might want to skip that section entirely.
-
         return clauses
 
     def _cleanup_clauses(self, clauses: List[Clause]) -> List[Clause]:
@@ -350,10 +317,6 @@ class ContractSegmenter:
 
         return cleaned
 
-
-# ---------------------------
-# Example usage (manual test)
-# ---------------------------
 
 def load_contract_text(input_path: str) -> str:
     """
@@ -406,6 +369,4 @@ if __name__ == "__main__":
             out.write(f"Label: {c['label']}\n")
             out.write("-" * 50 + "\n")
             out.write(c["text"] + "\n\n")
-
-    print(f"Done. Wrote {len(clause_dicts)} clauses to {output_path}")
 
