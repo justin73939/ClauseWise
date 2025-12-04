@@ -1,15 +1,4 @@
-"""
-clause_segmenter.py
-
-Rule-based contract clause segmenter for ClauseWise.
-
-Pipeline:
-    raw text -> preprocess -> section segmentation -> subclause segmentation
-           -> clean-up -> list of clause dicts
-"""
-
 from __future__ import annotations
-
 import os
 from PyPDF2 import PdfReader
 import re
@@ -19,14 +8,14 @@ from typing import List, Optional, Dict, Any
 @dataclass
 class Section:
     section_id: int
-    heading: Optional[str]  # can be None for preamble
+    heading: Optional[str]
     text: str
 
 
 @dataclass
 class Clause:
-    clause_id: int               # global index
-    section_id: int              # which section this belongs to
+    clause_id: int            
+    section_id: int          
     section_heading: Optional[str]
     local_index: int             # index within section (1-based)
     label: Optional[str]         # e.g. "(a)" or "a)" or None
@@ -55,8 +44,6 @@ def looks_like_all_caps_heading(line: str, min_len: int = 5, min_upper_ratio: fl
     upper_ratio = sum(c.isupper() for c in letters) / len(letters)
     return upper_ratio >= min_upper_ratio
 
-
-# Subclause patterns:
 #   "(a) Text", "(1) Text", "(i) Text"
 SUBCLAUSE_PAREN_PATTERN = re.compile(r'^\s*\(([a-zA-Z0-9ivxlcdm]+)\)\s+')
 
@@ -69,37 +56,20 @@ class ContractSegmenter:
         min_clause_len_chars: int = 25,
         merge_short_clauses: bool = True,
     ) -> None:
-        """
-        :param min_clause_len_chars: clauses shorter than this (after stripping)
-                                     will be merged into previous if possible.
-        :param merge_short_clauses: enable the heuristic merging of very short clauses.
-        """
+
         self.min_clause_len_chars = min_clause_len_chars
         self.merge_short_clauses = merge_short_clauses
 
     def segment_contract(self, text: str) -> List[Dict[str, Any]]:
-        """
-        Top-level function:
-        Input: raw contract text (string)
-        Output: list of clause dicts (ready for downstream classifier)
-        """
         text = self._preprocess(text)
         sections = self._segment_sections(text)
         clauses = self._segment_clauses_within_sections(sections)
         clauses = self._cleanup_clauses(clauses)
 
-        # Return list of plain dicts (easier to serialize / JSON)
+        # Return list of plain dicts
         return [asdict(c) for c in clauses]
 
     def _preprocess(self, text: str) -> str:
-        """
-        Basic text normalization:
-            * normalize newlines
-            * collapse multiple spaces/tabs
-            * strip trailing spaces on each line
-
-        You can expand this (e.g., de-hyphenation, OCR fixes) as needed.
-        """
         if not text:
             return ""
 
@@ -113,7 +83,7 @@ class ContractSegmenter:
 
     def _is_section_heading(self, line: str) -> bool:
         """
-        Heuristic check: does this line look like a section heading?
+        Check: does this line look like a section heading?
         """
         s = line.strip()
         if not s:
@@ -134,9 +104,6 @@ class ContractSegmenter:
         return False
 
     def _segment_sections(self, text: str) -> List[Section]:
-        """
-        Split contract into large sections using heading heuristics.
-        """
         lines = text.split("\n")
 
         sections: List[Section] = []
@@ -207,9 +174,6 @@ class ContractSegmenter:
         return None
 
     def _strip_subclause_marker(self, line: str) -> str:
-        """
-        Remove the leading subclause marker from the line, if present.
-        """
         line = SUBCLAUSE_PAREN_PATTERN.sub("", line, count=1)
         line = SUBCLAUSE_SUFFIX_PATTERN.sub("", line, count=1)
         return line.lstrip()
@@ -275,10 +239,6 @@ class ContractSegmenter:
         return clauses
 
     def _cleanup_clauses(self, clauses: List[Clause]) -> List[Clause]:
-        """
-        Apply some simple heuristics to clean up the clauses:
-            * Merge very short clauses into the previous one.
-        """
         if not self.merge_short_clauses or not clauses:
             return clauses
 
@@ -319,10 +279,6 @@ class ContractSegmenter:
 
 
 def load_contract_text(input_path: str) -> str:
-    """
-    Load contract from either a .txt or .pdf file.
-    For PDFs, uses PyPDF2 to extract text.
-    """
     ext = os.path.splitext(input_path)[1].lower()
 
     if ext == ".txt":
@@ -369,4 +325,3 @@ if __name__ == "__main__":
             out.write(f"Label: {c['label']}\n")
             out.write("-" * 50 + "\n")
             out.write(c["text"] + "\n\n")
-
